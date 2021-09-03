@@ -11,6 +11,12 @@ app.use(express.json()); // for parsing application/json
 const PORT = process.env.PORT || 3000;
 
 app.get('/api/balance/:address', async (req, res) => {
+  const ethNetwork =
+    req.params.network === 'eth'
+      ? process.env.ETH_NETWORK
+      : process.env.BSC_NETWORK;
+  const web3 = new Web3(new Web3.providers.HttpProvider(ethNetwork));
+
   const userBalance = await web3.eth.getBalance(req.params.address);
 
   return res.json({
