@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 app.get('/api/balance/:address', async (req, res) => {
   const ethNetwork =
-    req.params.network === 'eth'
+    req.query.network === 'eth'
       ? process.env.ETH_NETWORK
       : process.env.BSC_NETWORK;
   const web3 = new Web3(new Web3.providers.HttpProvider(ethNetwork));
