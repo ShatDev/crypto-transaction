@@ -6,6 +6,7 @@
   "dependencies": {
     "@ethereumjs/tx": "^3.3.0",
     "axios": "^0.21.1",
+    "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "ethereumjs-common": "^1.5.2",
     "ethereumjs-tx": "^2.1.2",

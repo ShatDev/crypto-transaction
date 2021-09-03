@@ -3,10 +3,13 @@ const Web3 = require('web3');
 const EthereumTx = require('ethereumjs-tx').Transaction;
 const Validator = require('validatorjs');
 const Common = require('ethereumjs-common').default;
+const cors = require('cors');
+
 
 require('dotenv').config();
 
 const app = express();
+app.use(cors());
 app.use(express.json()); // for parsing application/json
 
 const PORT = process.env.PORT || 3000;
