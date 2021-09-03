@@ -2,6 +2,7 @@ const express = require('express');
 const Web3 = require('web3');
 const EthereumTx = require('ethereumjs-tx').Transaction;
 const axios = require('axios');
+const Common = require('ethereumjs-common').default;
 
 require('dotenv').config();
 
@@ -42,23 +43,43 @@ app.post('/api/transfer', async (req, res) => {
       let balance = web3.utils.fromWei(result, 'ether');
       console.log(balance + ' ETH');
       if (balance < req.body.amount) {
-        console.log('insufficient funds');
-        return reject();
+        reject();
+
+        return res.status(401).json({ error: 'insufficient funds' });
       }
 
-      let gasPrices = await getCurrentGasPrices();
+      let gasPrice = await web3.eth.getGasPrice();
+
       let details = {
         to: req.body.receiver,
         value: web3.utils.toHex(
           web3.utils.toWei(req.body.amount.toString(), 'ether')
         ),
         gas: 21000,
-        gasPrice: gasPrices.low * 1000000000,
+        gasPrice: parseFloat(gasPrice),
         nonce: nonce,
-        chainId: 4,
       };
 
-      const transaction = new EthereumTx(details, { chain: 'rinkeby' });
+      let common;
+
+      if (req.body.network === 'eth') {
+        common = { chain: 'rinkeby' };
+      } else {
+        common = Common.forCustomChain(
+          'mainnet',
+          {
+            name: 'bnb',
+            networkId: 97,
+            chainId: 97,
+          },
+          'istanbul'
+        );
+      }
+
+      const transaction = new EthereumTx(
+        details,
+        req.body.network === 'eth' ? common : { common }
+      );
       let privateKey = req.body.privateKey;
       let privKey = Buffer.from(privateKey, 'hex');
       transaction.sign(privKey);
@@ -80,18 +101,6 @@ app.post('/api/transfer', async (req, res) => {
       );
     });
   });
-
-  async function getCurrentGasPrices() {
-    let response = await axios.get(
-      'https://ethgasstation.info/json/ethgasAPI.json'
-    );
-    let prices = {
-      low: response.data.safeLow / 10,
-      medium: response.data.average / 10,
-      high: response.data.fast / 10,
-    };
-    return prices;
-  }
 });
 
 app.listen(PORT, () => console.log(`Server is running on PORT ${PORT}`));
