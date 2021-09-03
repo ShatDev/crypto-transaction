@@ -10,6 +10,7 @@
     "ethereumjs-common": "^1.5.2",
     "ethereumjs-tx": "^2.1.2",
     "express": "^4.17.1",
+    "validatorjs": "^3.22.1",
     "web3": "^1.5.2"
   },
   "scripts": {

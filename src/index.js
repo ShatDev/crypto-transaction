@@ -1,7 +1,7 @@
 const express = require('express');
 const Web3 = require('web3');
 const EthereumTx = require('ethereumjs-tx').Transaction;
-const axios = require('axios');
+const Validator = require('validatorjs');
 const Common = require('ethereumjs-common').default;
 
 require('dotenv').config();
@@ -26,6 +26,22 @@ app.get('/api/balance/:address', async (req, res) => {
 });
 
 app.post('/api/transfer', async (req, res) => {
+  let rules = {
+    privateKey: 'required|string',
+    amount: 'required',
+    receiver: 'required|string',
+    network: 'required|string',
+  };
+
+  let validation = new Validator(req.body, rules);
+
+  if (validation.fails()) {
+    return res.status(401).json({
+      type: 'ValidationError',
+      errors: validation.errors.all(),
+    });
+  }
+
   const ethNetwork =
     req.body.network === 'eth'
       ? process.env.ETH_NETWORK
