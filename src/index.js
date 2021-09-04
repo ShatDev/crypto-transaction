@@ -87,7 +87,7 @@ app.post('/api/transfer', async (req, res) => {
         [from]
       );
 
-      return res.json({ signature });
+      return res.json({ hash: signature });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
