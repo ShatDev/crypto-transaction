@@ -1,10 +1,7 @@
 const express = require('express');
 const Web3 = require('web3');
-const EthereumTx = require('ethereumjs-tx').Transaction;
 const Validator = require('validatorjs');
-const Common = require('ethereumjs-common').default;
 const cors = require('cors');
-
 
 require('dotenv').config();
 
@@ -53,73 +50,46 @@ app.post('/api/transfer', async (req, res) => {
 
   const { address: sender } = web3.eth.accounts.wallet.add(req.body.privateKey);
 
-  return new Promise(async (resolve, reject) => {
-    var nonce = await web3.eth.getTransactionCount(sender);
-    web3.eth.getBalance(sender, async (err, result) => {
-      if (err) {
-        return reject();
-      }
-      let balance = web3.utils.fromWei(result, 'ether');
-      console.log(balance + ' ETH');
-      if (balance < req.body.amount) {
-        reject();
+  try {
+    const weiBalance = await web3.eth.getBalance(sender);
+    let balance = web3.utils.fromWei(weiBalance, 'ether');
 
-        return res.status(401).json({ error: 'insufficient funds' });
-      }
+    if (balance < req.body.amount) {
+      return res.status(401).json({ error: 'insufficient funds' });
+    }
+    const nonce = await web3.eth.getTransactionCount(sender);
 
-      let gasPrice = await web3.eth.getGasPrice();
+    const gas = web3.utils.toBN(21000);
 
-      let details = {
-        to: req.body.receiver,
-        value: web3.utils.toHex(
-          web3.utils.toWei(req.body.amount.toString(), 'ether')
-        ),
-        gas: 21000,
-        gasPrice: parseFloat(gasPrice),
-        nonce: nonce,
-      };
+    const gasPrice = await web3.eth.getGasPrice();
 
-      let common;
+    const amount = web3.utils.toHex(
+      web3.utils.toWei(req.body.amount.toString(), 'ether')
+    );
 
-      if (req.body.network === 'eth') {
-        common = { chain: 'rinkeby' };
-      } else {
-        common = Common.forCustomChain(
-          'mainnet',
-          {
-            name: 'bnb',
-            networkId: 97,
-            chainId: 97,
-          },
-          'istanbul'
-        );
-      }
+    const txObj = {
+      to: req.body.receiver,
+      value: amount,
+      gas,
+      gasPrice,
+      nonce,
+    };
 
-      const transaction = new EthereumTx(
-        details,
-        req.body.network === 'eth' ? common : { common }
-      );
-      let privateKey = req.body.privateKey;
-      let privKey = Buffer.from(privateKey, 'hex');
-      transaction.sign(privKey);
+    const signedTx = await web3.eth.accounts.signTransaction(
+      txObj,
+      req.body.privateKey
+    );
 
-      const serializedTransaction = transaction.serialize();
-
-      web3.eth.sendSignedTransaction(
-        '0x' + serializedTransaction.toString('hex'),
-        (err, id) => {
-          if (err) {
-            console.log(err);
-            return reject();
-          }
-
-          resolve({ id: id });
-
-          return res.json({ hash: id });
-        }
-      );
-    });
-  });
+    try {
+      web3.eth.sendSignedTransaction(signedTx.rawTransaction, (err, txHash) => {
+        return res.json({ hash: txHash });
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 app.listen(PORT, () => console.log(`Server is running on PORT ${PORT}`));
