@@ -25,35 +25,45 @@ app.get('/api/balance/:address', async (req, res) => {
     );
     const publicKey = new solanaWeb3.PublicKey(req.params.address);
 
-    const balance = await connection.getBalance(publicKey);
+    try {
+      const balance = await connection.getBalance(publicKey);
 
-    return res.json({
-      amount: balance / 1e9,
-    });
+      return res.json({
+        amount: balance / 1e9,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
   }
   const web3 = new Web3(new Web3.providers.HttpProvider(network));
+  try {
+    const userBalance = await web3.eth.getBalance(req.params.address);
 
-  const userBalance = await web3.eth.getBalance(req.params.address);
-
-  return res.json({
-    amount: parseFloat(web3.utils.fromWei(userBalance, 'ether')),
-  });
+    return res.json({
+      amount: parseFloat(web3.utils.fromWei(userBalance, 'ether')),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/create', async (req, res) => {
-  let web3;
-  if (req.query.network === 'solana') {
-    web3 = solanaWeb3;
+  try {
+    let web3;
+
+    if (req.query.network === 'solana') {
+      web3 = solanaWeb3;
+    }
+
+    const keyPair = web3.Keypair.generate();
+
+    return res.json({
+      address: keyPair.publicKey.toString(),
+      privateKey: keyPair.secretKey.toString(),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
-
-  const keyPair = web3.Keypair.generate();
-
-  console.log(keyPair.secretKey);
-
-  return res.json({
-    address: keyPair.publicKey.toString(),
-    privateKey: keyPair.secretKey.toString(),
-  });
 });
 
 app.post('/api/transfer', async (req, res) => {
