@@ -70,16 +70,16 @@ app.post('/api/transfer', async (req, res) => {
     const privateKey = new Uint8Array(req.body.privateKey.split(','));
     const from = solanaWeb3.Keypair.fromSecretKey(privateKey);
 
-    // Add transfer instruction to transaction
-    const transaction = new solanaWeb3.Transaction().add(
-      solanaWeb3.SystemProgram.transfer({
-        fromPubkey: from.publicKey,
-        toPubkey: receiver,
-        lamports: solanaWeb3.LAMPORTS_PER_SOL * req.body.amount,
-      })
-    );
-
     try {
+      // Add transfer instruction to transaction
+      const transaction = new solanaWeb3.Transaction().add(
+        solanaWeb3.SystemProgram.transfer({
+          fromPubkey: from.publicKey,
+          toPubkey: receiver,
+          lamports: solanaWeb3.LAMPORTS_PER_SOL * req.body.amount,
+        })
+      );
+
       // Sign transaction, broadcast, and confirm
       const signature = await solanaWeb3.sendAndConfirmTransaction(
         connection,
