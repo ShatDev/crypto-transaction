@@ -5,6 +5,7 @@
   "license": "MIT",
   "dependencies": {
     "@ethereumjs/tx": "^3.3.0",
+    "@solana/web3.js": "^1.24.1",
     "axios": "^0.21.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
