@@ -13,11 +13,25 @@ app.use(express.json()); // for parsing application/json
 const PORT = process.env.PORT || 3000;
 
 app.get('/api/balance/:address', async (req, res) => {
-  const ethNetwork =
+  const network =
     req.query.network === 'eth'
       ? process.env.ETH_NETWORK
       : process.env.BSC_NETWORK;
-  const web3 = new Web3(new Web3.providers.HttpProvider(ethNetwork));
+
+  if (req.query.network === 'solana') {
+    const connection = new solanaWeb3.Connection(
+      solanaWeb3.clusterApiUrl('devnet'),
+      'confirmed'
+    );
+    const publicKey = new solanaWeb3.PublicKey(req.params.address);
+
+    const balance = await connection.getBalance(publicKey);
+
+    return res.json({
+      amount: balance / 1e9,
+    });
+  }
+  const web3 = new Web3(new Web3.providers.HttpProvider(network));
 
   const userBalance = await web3.eth.getBalance(req.params.address);
 
