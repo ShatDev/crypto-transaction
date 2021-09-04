@@ -1,5 +1,6 @@
 const express = require('express');
 const Web3 = require('web3');
+const solanaWeb3 = require('@solana/web3.js');
 const Validator = require('validatorjs');
 const cors = require('cors');
 
@@ -25,6 +26,22 @@ app.get('/api/balance/:address', async (req, res) => {
   });
 });
 
+app.post('/api/create', async (req, res) => {
+  let web3;
+  if (req.query.network === 'solana') {
+    web3 = solanaWeb3;
+  }
+
+  const keyPair = web3.Keypair.generate();
+
+  console.log(keyPair.secretKey);
+
+  return res.json({
+    address: keyPair.publicKey.toString(),
+    privateKey: keyPair.secretKey.toString(),
+  });
+});
+
 app.post('/api/transfer', async (req, res) => {
   let rules = {
     privateKey: 'required|string',
@@ -40,6 +57,40 @@ app.post('/api/transfer', async (req, res) => {
       type: 'ValidationError',
       errors: validation.errors.all(),
     });
+  }
+
+  if (req.body.network === 'solana') {
+    const connection = new solanaWeb3.Connection(
+      solanaWeb3.clusterApiUrl('devnet'),
+      'confirmed'
+    );
+
+    const receiver = new solanaWeb3.PublicKey(req.body.receiver);
+
+    const privateKey = new Uint8Array(req.body.privateKey.split(','));
+    const from = solanaWeb3.Keypair.fromSecretKey(privateKey);
+
+    // Add transfer instruction to transaction
+    const transaction = new solanaWeb3.Transaction().add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey: from.publicKey,
+        toPubkey: receiver,
+        lamports: solanaWeb3.LAMPORTS_PER_SOL * req.body.amount,
+      })
+    );
+
+    try {
+      // Sign transaction, broadcast, and confirm
+      const signature = await solanaWeb3.sendAndConfirmTransaction(
+        connection,
+        transaction,
+        [from]
+      );
+
+      return res.json({ signature });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
   }
 
   const ethNetwork =
