@@ -36,7 +36,7 @@ app.get('/api/balance/:address', async (req, res) => {
   const userBalance = await web3.eth.getBalance(req.params.address);
 
   return res.json({
-    amount: web3.utils.fromWei(userBalance, 'ether'),
+    amount: parseFloat(web3.utils.fromWei(userBalance, 'ether')),
   });
 });
 
